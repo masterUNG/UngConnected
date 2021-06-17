@@ -8,6 +8,7 @@ class MyConstant {
 
   // General
   static String appName = 'Ung Connceted';
+  static String domain = 'https://c8f245cfa3a3.ngrok.io';
 
   // Color
   static Color primary = Color(0xff8069bc);

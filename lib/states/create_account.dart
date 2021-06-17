@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:ungconnected/utility/my_constant.dart';
+import 'package:ungconnected/utility/my_dialog.dart';
 
 class CreateAccount extends StatefulWidget {
   const CreateAccount({Key? key}) : super(key: key);
@@ -9,6 +11,12 @@ class CreateAccount extends StatefulWidget {
 }
 
 class _CreateAccountState extends State<CreateAccount> {
+  final formKey = GlobalKey<FormState>();
+  TextEditingController nameController = TextEditingController();
+  TextEditingController userController = TextEditingController();
+  TextEditingController passwordController = TextEditingController();
+  TextEditingController rePasswordController = TextEditingController();
+
   Row buildName() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -17,6 +25,14 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: 250,
           child: TextFormField(
+            controller: nameController,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Please Fill Name in Blank';
+              } else {
+                return null;
+              }
+            },
             decoration: InputDecoration(
               labelText: 'Name :',
               prefixIcon: Icon(Icons.fingerprint),
@@ -40,6 +56,14 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: 250,
           child: TextFormField(
+            controller: userController,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Please Fill User in Blank';
+              } else {
+                return null;
+              }
+            },
             decoration: InputDecoration(
               labelText: 'User :',
               prefixIcon: Icon(Icons.perm_identity),
@@ -63,6 +87,14 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: 250,
           child: TextFormField(
+            controller: passwordController,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Please Fill Password in Blank';
+              } else {
+                return null;
+              }
+            },
             obscureText: true,
             decoration: InputDecoration(
               labelText: 'Password :',
@@ -87,6 +119,14 @@ class _CreateAccountState extends State<CreateAccount> {
           margin: EdgeInsets.only(top: 16),
           width: 250,
           child: TextFormField(
+            controller: rePasswordController,
+            validator: (value) {
+              if (value!.isEmpty) {
+                return 'Please Fill Re-Password in Blank';
+              } else {
+                return null;
+              }
+            },
             obscureText: true,
             decoration: InputDecoration(
               labelText: 'Re-Password :',
@@ -107,21 +147,63 @@ class _CreateAccountState extends State<CreateAccount> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.cloud_upload))],
+        actions: [buildNewAccount()],
         title: Text('สร้าง สมาชิกใหม่'),
         backgroundColor: MyConstant.dart,
       ),
-      body: GestureDetector(onTap: ()=>FocusScope.of(context).requestFocus(FocusNode()),
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
         behavior: HitTestBehavior.opaque,
-        child: ListView(
-          children: [
-            buildName(),
-            buildUser(),
-            buildPassword(),
-            buildRePassword(),
-          ],
+        child: Form(
+          key: formKey,
+          child: ListView(
+            children: [
+              buildName(),
+              buildUser(),
+              buildPassword(),
+              buildRePassword(),
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Future<Null> insertNewAccount() async {
+    String path =
+        '${MyConstant.domain}/ungConnected/getUserWhereUser.php?isAdd=true&user=${userController.text}';
+    print('path = $path');
+    await Dio().get(path).then((value) async {
+      print('value = $value');
+      if (value.toString() == 'null') {
+        String apiInsertData =
+            '${MyConstant.domain}/ungConnected/insertData.php?isAdd=true&name=${nameController.text}&user=${userController.text}&password=${passwordController.text}';
+        await Dio().get(apiInsertData).then((value) {
+          if (value.toString() == 'true') {
+            Navigator.pop(context);
+          } else {
+            MyDialog().normalDialog(
+                context, 'Cannot Create Account', 'Please Try Again');
+          }
+        });
+      } else {
+        MyDialog().normalDialog(
+            context, 'User False', 'ไม่สามารถใช้ user นี่ได้มีคนอื่นใช้ไปแล้ว');
+      }
+    });
+  }
+
+  IconButton buildNewAccount() => IconButton(
+        onPressed: () {
+          if (formKey.currentState!.validate()) {
+            if (passwordController.text == rePasswordController.text) {
+              insertNewAccount();
+            } else {
+              MyDialog().normalDialog(context, 'Password ไม่เหมือนกัน',
+                  'กรุณากรอก Password ให้เหมือนกัน');
+            }
+          }
+        },
+        icon: Icon(Icons.cloud_upload),
+      );
 }
